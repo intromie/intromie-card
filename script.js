@@ -32,6 +32,7 @@ let editing = false;
 let busy = false;
 let locked = false;
 let pinModalOpen = false;
+let saving = false;
 
 let cardId = "";
 let docRef = null;
@@ -50,8 +51,7 @@ let stagedBackDataUrl = "";
    ========================= */
 function getCardId(){
   const u = new URL(location.href);
-  const id = (u.searchParams.get("id") || "").trim();
-  return id;
+  return (u.searchParams.get("id") || "").trim();
 }
 
 function side(){
@@ -76,6 +76,29 @@ function setEdit(on){
   editBtn.textContent = on ? "SAVE" : "EDIT";
   uploadF.classList.toggle("isOn", on && side() === "front");
   uploadB.classList.toggle("isOn", on && side() === "back");
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function setSaving(on){
+  saving = on;
+
+  if(on){
+    editBtn.textContent = "SAVING…";
+    editBtn.disabled = true;
+    editBtn.style.opacity = "0.65";
+    editBtn.style.pointerEvents = "none";
+  }else{
+    editBtn.disabled = false;
+    editBtn.style.opacity = "";
+    editBtn.style.pointerEvents = "";
+  }
+}
+
+async function flashSaved(){
+  editBtn.textContent = "✓ SAVED";
+  uv(side() === "front" ? frontFace : backFace);
+  await sleep(450);
 }
 
 async function sha256(str){
@@ -220,7 +243,7 @@ async function loadCard(){
   }
 
   const data = snap.data() || {};
-  remotePinHash = data.pinHash || "";
+  remotePinHash  = data.pinHash || "";
   remoteFrontUrl = data.frontUrl || "";
   remoteBackUrl  = data.backUrl || "";
 
@@ -238,8 +261,15 @@ function pick(){
   filePick.click();
 }
 
-uploadF.onclick = (e) => { e.stopPropagation(); if(!locked && !pinModalOpen && editing && side()==="front") pick(); };
-uploadB.onclick = (e) => { e.stopPropagation(); if(!locked && !pinModalOpen && editing && side()==="back")  pick(); };
+uploadF.onclick = (e) => {
+  e.stopPropagation();
+  if(!locked && !pinModalOpen && !saving && editing && side()==="front") pick();
+};
+
+uploadB.onclick = (e) => {
+  e.stopPropagation();
+  if(!locked && !pinModalOpen && !saving && editing && side()==="back") pick();
+};
 
 filePick.onchange = async () => {
   const f = filePick.files && filePick.files[0];
@@ -259,6 +289,7 @@ filePick.onchange = async () => {
 
   URL.revokeObjectURL(img.src);
 
+  // ถ้าพี่มี่ใช้ JPEG อยู่แล้วก็เปลี่ยนบรรทัดนี้เป็น image/jpeg ได้
   const dataUrl = c.toDataURL("image/webp", 0.85);
 
   if(side() === "front"){
@@ -311,7 +342,7 @@ async function saveIfNeeded(){
    ========================= */
 editBtn.onclick = async (e) => {
   e.stopPropagation();
-  if (locked || pinModalOpen) return;
+  if (locked || pinModalOpen || saving) return;
 
   if(!editing){
     const ok = await auth(); // enter or set
@@ -320,17 +351,23 @@ editBtn.onclick = async (e) => {
       uv(side() === "front" ? frontFace : backFace);
     }
   }else{
-    // SAVE
-    await saveIfNeeded();
-    setEdit(false);
-    uv(side() === "front" ? frontFace : backFace);
+    // SAVE (with loading + anti-spam)
+    try{
+      setSaving(true);
+      await saveIfNeeded();
+      await flashSaved();
+      setEdit(false);
+      uv(side() === "front" ? frontFace : backFace);
+    }finally{
+      setSaving(false);
+    }
   }
 };
 
 // Tap lock screen to unlock
 lockOverlay.onclick = async (e) => {
   e.stopPropagation();
-  if (pinModalOpen) return;
+  if (pinModalOpen || saving) return;
 
   const ok = await openPinModalFlow("enter");
   if (ok) {
@@ -341,7 +378,7 @@ lockOverlay.onclick = async (e) => {
 
 // Flip
 card.onclick = () => {
-  if(locked || pinModalOpen) return;
+  if(locked || pinModalOpen || saving) return;
   if(editing || busy) return;
   busy = true;
   card.classList.toggle("isFlipped");
@@ -361,7 +398,6 @@ card.addEventListener("transitionend", () => {
   cardId = getCardId();
   if(!cardId){
     alert("Missing card id. Add ?id=ABC000001 to the URL");
-    // keep blank, disable everything
     editBtn.style.visibility = "hidden";
     setLocked(true);
     return;
