@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Intromie Card</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="stage">
+    <div class="cardWrap">
+
+      <!-- EDIT / SAVE (outside card) -->
+      <button class="editBtn editOutside" id="editBtn" type="button">EDIT</button>
+
+      <!-- CARD -->
+      <div class="card3d" id="card3d" tabindex="0" aria-label="Card">
+        <!-- FRONT -->
+        <div class="face front" id="frontFace">
+          <img id="frontImg" draggable="false" alt="front" />
+
+          <button class="uploadTap" id="uploadFrontTap" type="button" aria-label="Upload photo (front)">
+            <img class="ph" src="./assets/upload_placeholder.png" alt="Upload photo" draggable="false" />
+          </button>
+
+          <div class="uv" aria-hidden="true"></div>
+        </div>
+
+        <!-- BACK -->
+        <div class="face back" id="backFace">
+          <img id="backImg" draggable="false" alt="back" />
+
+          <button class="uploadTap" id="uploadBackTap" type="button" aria-label="Upload photo (back)">
+            <img class="ph" src="./assets/upload_placeholder.png" alt="Upload photo" draggable="false" />
+          </button>
+
+          <div class="uv" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <!-- LOCK SCREEN OVERLAY -->
+      <button class="lockOverlay" id="lockOverlay" type="button" aria-label="Locked. Tap to unlock">
+        <img src="./assets/lock_screen.png" alt="Locked" draggable="false" />
+      </button>
+
+      <!-- LOGO -->
+      <a class="brandLogo" href="https://www.instagram.com/intromie.studio"
+         target="_blank" rel="noopener noreferrer" aria-label="Open Intromie Instagram">
+        <img src="./assets/intromie_logo.png" alt="intromie" draggable="false" />
+      </a>
+
+    </div>
+  </main>
+
+  <!-- PIN MODAL -->
+  <div class="pinModal" id="pinModal" aria-hidden="true">
+    <div class="pinSheet" role="dialog" aria-modal="true" aria-label="PIN entry">
+      <div class="pinTitle" id="pinTitle">Enter PIN</div>
+
+      <div class="pinDots" id="pinDots" aria-label="PIN dots">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+
+      <div class="pinPad" id="pinPad">
+        <button class="k" data-digit="1">1</button>
+        <button class="k" data-digit="2">2</button>
+        <button class="k" data-digit="3">3</button>
+
+        <button class="k" data-digit="4">4</button>
+        <button class="k" data-digit="5">5</button>
+        <button class="k" data-digit="6">6</button>
+
+        <button class="k" data-digit="7">7</button>
+        <button class="k" data-digit="8">8</button>
+        <button class="k" data-digit="9">9</button>
+
+        <button class="k kGhost" data-action="cancel">Cancel</button>
+        <button class="k" data-digit="0">0</button>
+        <button class="k kGhost" data-action="back">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="filePick" accept="image/*" hidden />
+
+  <!-- Firebase (Compat CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+
+  <script>
+    // ✅ วาง firebaseConfig ของพี่มี่จากหน้า Firebase ตรงนี้ (ก๊อปมาแปะ)
+    const firebaseConfig = {
+    apiKey: "AIzaSyBlKxcRC4cpTCmfRfK1-ONRc60lzNsbDZs",
+    authDomain: "intromie-web-card.firebaseapp.com",
+    projectId: "intromie-web-card",
+    storageBucket: "intromie-web-card.firebasestorage.app",
+    messagingSenderId: "834328323445",
+    appId: "1:834328323445:web:d3afb22df2dba035a3df3c"
+  };
+
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <script src="./script.js"></script>
+</body>
+</html>
