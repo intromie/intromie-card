@@ -51,6 +51,10 @@ const editInfoContinue = document.getElementById("editInfoContinue");
 const lockInfoModal    = document.getElementById("lockInfoModal");
 const lockInfoCancel   = document.getElementById("lockInfoCancel");
 const lockInfoContinue = document.getElementById("lockInfoContinue");
+const removePhotoBtn = document.getElementById("removePhotoBtn");
+
+let stagedRemovePhoto = false;
+
 
 /* =========================
    State
@@ -87,12 +91,12 @@ let stagedBackDataUrl = "";
 
 /* Pastel set */
 const PASTELS = [
-  "#F8E1E7", // blush pink
-  "#FFE8CC", // peach
-  "#FFF5B7", // butter
-  "#DFF5E1", // mint
-  "#D9F0FF", // baby blue
-  "#E7E1FF", // lavender
+  "#a48bc1", // blush pink
+  "#a5ddf8", // peach
+  "#28b570", // butter
+  "#fab52a", // mint
+  "#f16a90", // baby blue
+  "#e14d4e", // lavender
   "#F3E6FF", // lilac
   "#8f8f8f"  // gray
 ];
@@ -100,6 +104,20 @@ const PASTELS = [
 /* =========================
    Helpers
    ========================= */
+function isLightColor(hex){
+  if(!hex) return false;
+  const c = hex.replace("#","");
+
+  const r = parseInt(c.substring(0,2),16);
+  const g = parseInt(c.substring(2,4),16);
+  const b = parseInt(c.substring(4,6),16);
+
+  // luminance (มาตรฐาน)
+  const luminance = (0.299*r + 0.587*g + 0.114*b);
+  return luminance > 180;
+}
+
+
 function getCardId(){
   const u = new URL(location.href);
   return (u.searchParams.get("id") || "").trim();
@@ -136,9 +154,20 @@ async function sha256(str){
    Background color
    ========================= */
 function applyBgColor(color){
-  const c = color || "#8f8f8f"; // สีพื้นหลัง default เดิม
-  document.body.style.background = c;
+  const bg = color || "#8f8f8f";
+  document.body.style.background = bg;
+
+  const light = isLightColor(bg);
+
+  // ===== EDIT BUTTON =====
+  editBtn.style.color = light ? "#222" : "#f2f2f2";
+  editBtn.style.opacity = "0.85";
+
+  // ===== LOCK BUTTON =====
+  lockBtn.style.color = light ? "#222" : "#f2f2f2";
+  lockBtn.style.opacity = "0.85";
 }
+
 
 
 function updatePaletteActive(){
@@ -595,6 +624,24 @@ async function requestUpload(which){
     securityAccepted = true;
   }
 
+function updateRemovePhotoBtn(){
+  if(
+    isEditMode &&
+    !isCardLocked &&
+    currentPhotoUrl &&       // มีรูปอยู่
+    !stagedRemovePhoto       // ยังไม่ได้ลบ
+  ){
+    removePhotoBtn.style.display = "flex";
+  }else{
+    removePhotoBtn.style.display = "none";
+  }
+}
+if(stagedRemovePhoto){
+  cardData.photoUrl = null;
+  stagedRemovePhoto = false;
+}
+
+
   pick();
 }
 
@@ -782,6 +829,28 @@ card.addEventListener("transitionend", () => {
   busy = false;
   updateUploadHints();
   updateLockButton();
+});
+removePhotoBtn.addEventListener("click",()=>{
+  openConfirmModal({
+    title:"Remove Photo",
+    message:`
+This will remove the current image from this card.
+You can upload a new image afterward.
+
+This action will only be saved when you press SAVE.
+    `,
+    confirmText:"REMOVE",
+    cancelText:"CANCEL",
+    onConfirm:()=>{
+      stagedRemovePhoto = true;
+
+      // ล้าง preview รูป
+      clearPhotoPreview();   // ใช้ฟังก์ชันเดิมที่กลับไปหน้า UPLOAD PHOTO
+      currentPhotoUrl = null;
+
+      updateRemovePhotoBtn();
+    }
+  });
 });
 
 /* =========================
