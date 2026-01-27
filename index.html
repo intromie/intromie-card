@@ -5,13 +5,110 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Intromie Card</title>
   <link rel="stylesheet" href="./style.css" />
+
+  <!-- ✅ Inline CSS เฉพาะของพาเลต + ของเดิมที่เราเคยใส่ไว้ (ไม่แตะ style.css) -->
+  <style>
+    .uploadTap{ position:absolute; inset:0; }
+
+    .editHint{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      font-weight:700;
+      letter-spacing:.12em;
+      font-size:12px;
+      line-height:1.4;
+      color:rgba(255,255,255,.92);
+      background:rgba(0,0,0,.28);
+      pointer-events:none;
+      border-radius:16px;
+      text-shadow: 0 2px 10px rgba(0,0,0,.45);
+    }
+    .uploadTap.showHint .editHint{ display:flex; }
+
+    .lockOutside{
+      left: 14px;
+      right: auto !important;
+    }
+
+    /* === TOAST === */
+    #toast{
+      position:absolute;
+      left:50%;
+      top:18px;
+      transform:translateX(-50%) translateY(-8px);
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(0,0,0,.55);
+      color:rgba(255,255,255,.92);
+      font-weight:700;
+      font-size:12px;
+      letter-spacing:.08em;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease, transform .18s ease;
+      z-index:50;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+
+    /* ===== Pastel palette (EDIT only) ===== */
+    .paletteWrap{
+      width: 100%;
+      display: none; /* show only in EDIT */
+      justify-content: center;
+      margin-top: 12px;   /* ระยะจากการ์ด */
+      margin-bottom: 12px;/* ระยะก่อนถึงโลโก้ */
+      position: relative;
+      z-index: 6;
+    }
+    .palette{
+      display:flex;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      box-shadow: 0 10px 24px rgba(0,0,0,.18);
+    }
+    .swatch{
+      width:18px;
+      height:18px;
+      border-radius:999px;
+      border: 1px solid rgba(255,255,255,.35);
+      box-shadow: 0 6px 12px rgba(0,0,0,.18);
+      cursor:pointer;
+      outline:none;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+      background: transparent;
+      padding:0;
+    }
+    .swatch:active{ transform: scale(.92); }
+    .swatch.isOn{
+      border-color: rgba(255,255,255,.9);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.35), 0 10px 18px rgba(0,0,0,.22);
+    }
+  </style>
 </head>
+
 <body>
   <main class="stage">
     <div class="cardWrap">
 
-      <!-- EDIT / SAVE (outside card) -->
+      <!-- LOCK / UNLOCK -->
+      <button class="editBtn editOutside lockOutside" id="lockBtn" type="button" style="visibility:hidden;">
+        LOCK CARD
+      </button>
+
+      <!-- EDIT / SAVE -->
       <button class="editBtn editOutside" id="editBtn" type="button">EDIT</button>
+
+      <!-- TOAST -->
+      <div id="toast">✓ SAVED</div>
 
       <!-- CARD -->
       <div class="card3d" id="card3d" tabindex="0" aria-label="Card">
@@ -21,6 +118,7 @@
 
           <button class="uploadTap" id="uploadFrontTap" type="button" aria-label="Upload photo (front)">
             <img class="ph" src="./assets/upload_placeholder.png" alt="Upload photo" draggable="false" />
+            <div class="editHint" id="hintFront">UPLOAD<br>NEW PHOTO</div>
           </button>
 
           <div class="uv" aria-hidden="true"></div>
@@ -32,6 +130,7 @@
 
           <button class="uploadTap" id="uploadBackTap" type="button" aria-label="Upload photo (back)">
             <img class="ph" src="./assets/upload_placeholder.png" alt="Upload photo" draggable="false" />
+            <div class="editHint" id="hintBack">UPLOAD<br>NEW PHOTO</div>
           </button>
 
           <div class="uv" aria-hidden="true"></div>
@@ -42,6 +141,11 @@
       <button class="lockOverlay" id="lockOverlay" type="button" aria-label="Locked. Tap to unlock">
         <img src="./assets/lock_screen.png" alt="Locked" draggable="false" />
       </button>
+
+      <!-- ✅ COLOR PALETTE (shows only in EDIT) -->
+      <div class="paletteWrap" id="paletteWrap" aria-hidden="true">
+        <div class="palette" id="palette"></div>
+      </div>
 
       <!-- LOGO -->
       <a class="brandLogo" href="https://www.instagram.com/intromie.studio"
@@ -81,6 +185,137 @@
     </div>
   </div>
 
+  <!-- DATA SECURITY MODAL (session only) -->
+  <div class="pinModal" id="secModal" aria-hidden="true">
+    <div class="pinSheet" role="dialog" aria-modal="true" aria-label="Data security notice">
+      <div class="pinTitle" style="margin-bottom:10px;">Data Security</div>
+
+      <div style="text-align:left; font-size:13px; line-height:1.45; opacity:.95; max-height:42vh; overflow:auto; padding-right:4px;">
+        <div style="font-weight:600; margin-bottom:6px;">ความปลอดภัยของข้อมูล</div>
+        <div>
+          รูปภาพและข้อมูลจะถูกเก็บในระบบที่มีการป้องกัน<br>
+          และเข้าถึงได้เฉพาะผู้ที่มี PIN เท่านั้น<br>
+          ผู้ใช้เป็นผู้รับผิดชอบข้อมูลที่อัปโหลดด้วยตนเอง<br>
+          อย่างไรก็ตาม แนะนำให้หลีกเลี่ยงข้อมูลส่วนตัวหรือข้อมูลสำคัญ
+        </div>
+
+        <div style="height:12px;"></div>
+        <div style="opacity:.75;">⸻</div>
+        <div style="height:12px;"></div>
+
+        <div style="font-weight:600; margin-bottom:6px;">Data Security</div>
+        <div>
+          Images and content are stored in a protected system<br>
+          and can only be accessed by those with the correct PIN.<br>
+          Users are responsible for the content they upload.<br>
+          We recommend avoiding sensitive or personal information.
+        </div>
+      </div>
+
+      <label style="display:flex; gap:10px; align-items:flex-start; margin-top:14px; text-align:left; font-size:13px;">
+        <input type="checkbox" id="secCheck" style="margin-top:3px;" />
+        <span>Accept / ยอมรับเงื่อนไข</span>
+      </label>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="k kGhost" id="secCancel" type="button" style="flex:1;">Cancel</button>
+        <button class="k" id="secAccept" type="button" style="flex:1; opacity:.5; pointer-events:none;">Accept</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT PIN INFO MODAL -->
+  <div class="pinModal" id="editInfoModal" aria-hidden="true">
+    <div class="pinSheet" role="dialog" aria-modal="true" aria-label="Edit PIN info">
+      <div class="pinTitle" style="margin-bottom:10px;">Edit PIN</div>
+
+      <div style="text-align:left; font-size:13px; line-height:1.5; opacity:.95; max-height:44vh; overflow:auto; padding-right:4px;">
+        <div style="font-weight:700; margin-bottom:6px;">รหัสสำหรับ Edit PIN</div>
+        <div>
+          Edit PIN ใช้สำหรับแก้ไขข้อมูลและตั้งค่าในการ์ดนี้<br>
+          ผู้ใดที่มี <b>Edit PIN</b> สามารถเปลี่ยนรูปภาพและข้อมูลได้
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div>
+          โปรดเก็บรหัสนี้ไว้เป็นความลับ และหลีกเลี่ยงการแชร์ให้ผู้อื่น
+        </div>
+
+        <div style="height:14px;"></div>
+        <div style="opacity:.7;">⸻</div>
+        <div style="height:14px;"></div>
+
+        <div style="font-weight:700; margin-bottom:6px;">Edit PIN</div>
+        <div>
+          Edit PIN is used to edit and manage this card.<br>
+          Anyone with the <b>Edit PIN</b> can change images and content.
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div>
+          Keep this PIN private and do not share it with others.
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="k kGhost" id="editInfoCancel" type="button" style="flex:1;">Cancel</button>
+        <button class="k" id="editInfoContinue" type="button" style="flex:1;">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOCK INFO MODAL -->
+  <div class="pinModal" id="lockInfoModal" aria-hidden="true">
+    <div class="pinSheet" role="dialog" aria-modal="true" aria-label="Lock Card info">
+      <div class="pinTitle" style="margin-bottom:10px;">Lock Card</div>
+
+      <div style="text-align:left; font-size:13px; line-height:1.5; opacity:.95; max-height:44vh; overflow:auto; padding-right:4px;">
+        <div style="font-weight:700; margin-bottom:6px;">
+          รหัสสำหรับ Lock Card
+        </div>
+
+        <div>
+          Lock Card ใช้สำหรับจำกัดการเข้าถึงการ์ดนี้<br>
+          เฉพาะผู้ที่มี <b>Lock PIN</b> เท่านั้นจึงจะสามารถเปิดดูเนื้อหาได้
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div>
+          แนะนำให้ตั้ง <b>Lock PIN</b> ให้แตกต่างจาก <b>Edit PIN</b><br>
+          เพื่อช่วยลดความเสี่ยงในการถูกแก้ไขข้อมูลโดยไม่ได้รับอนุญาต
+        </div>
+
+        <div style="height:14px;"></div>
+        <div style="opacity:.7;">⸻</div>
+        <div style="height:14px;"></div>
+
+        <div style="font-weight:700; margin-bottom:6px;">
+          Lock Card PIN
+        </div>
+
+        <div>
+          Lock Card is used to restrict access to this card.<br>
+          Only users with the correct <b>Lock PIN</b> can view the content.
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div>
+          It is recommended to set a <b>Lock PIN</b> that is different from the <b>Edit PIN</b><br>
+          to reduce the risk of unauthorized content modification.
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="k kGhost" id="lockInfoCancel" type="button" style="flex:1;">Cancel</button>
+        <button class="k" id="lockInfoContinue" type="button" style="flex:1;">Continue</button>
+      </div>
+    </div>
+  </div>
+
   <input type="file" id="filePick" accept="image/*" hidden />
 
   <!-- Firebase (Compat CDN) -->
@@ -89,16 +324,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 
   <script>
-    // ✅ วาง firebaseConfig ของพี่มี่จากหน้า Firebase ตรงนี้ (ก๊อปมาแปะ)
-    const firebaseConfig = {
-    apiKey: "AIzaSyBlKxcRC4cpTCmfRfK1-ONRc60lzNsbDZs",
-    authDomain: "intromie-web-card.firebaseapp.com",
-    projectId: "intromie-web-card",
-    storageBucket: "intromie-web-card.firebasestorage.app",
-    messagingSenderId: "834328323445",
-    appId: "1:834328323445:web:d3afb22df2dba035a3df3c"
-  };
-
+    // ✅ วาง firebaseConfig ของพี่มี่ตรงนี้
+const firebaseConfig = {
+  apiKey: "AIzaSyBlKxcRC4cpTCmfRfK1-ONRc60lzNsbDZs",
+  authDomain: "intromie-web-card.firebaseapp.com",
+  projectId: "intromie-web-card",
+  storageBucket: "intromie-web-card.firebasestorage.app",
+  messagingSenderId: "834328323445",
+  appId: "1:834328323445:web:d3afb22df2dba035a3df3c"
+};
     firebase.initializeApp(firebaseConfig);
   </script>
 
