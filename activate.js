@@ -42,7 +42,7 @@ function isValidCardId(cardId) {
   // PREFIX: A-Z 2–10 ตัว
   // BATCH: YY(2 digits) + MonthCode(A-L) + round(1–4 digits)
   // RAND7: ตัวเลข 7 หลัก
-  return /^[A-Z]{2,10}-[0-9]{2}[A-L][0-9]{1,4}-[0-9]{7}$/.test(cardId);
+  return /^[A-Z]{2,10}-[0-9]{2}[A-L][0-9]{1,6}-[0-9]{7}$/.test(cardId);
 }
 
 
@@ -343,5 +343,6 @@ function shakeCard() {
 
   updateUI();
 })();
+
 
 
