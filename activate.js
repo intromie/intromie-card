@@ -38,9 +38,13 @@ function getCardId() {
 }
 
 function isValidCardId(cardId) {
-  // ตามที่พี่ใช้: ABC000001 (3 ตัวอักษร + 6 ตัวเลข)
-  return /^[A-Z]{3}\d{6}$/.test(cardId);
+  // FORMAT: PREFIX-BATCH-RAND7
+  // PREFIX: A-Z 2–10 ตัว
+  // BATCH: YY(2 digits) + MonthCode(A-L) + round(1–4 digits)
+  // RAND7: ตัวเลข 7 หลัก
+  return /^[A-Z]{2,10}-\d{2}[A-L]\d{1,4}-\d{7}$/.test(cardId);
 }
+
 
 function injectStyles() {
   if (document.getElementById("activate-style")) return;
@@ -339,3 +343,4 @@ function shakeCard() {
 
   updateUI();
 })();
+
